@@ -1,0 +1,6 @@
+node_modules/
+dist/
+data/
+skills/pin/SKILL.md
+skills/sessions/SKILL.md
+*.log

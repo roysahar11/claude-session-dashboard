@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Code Sessions</title>
+  <style>
+    /* ═══════════════════════════════════════════════
+       VARIABLES — Dark theme default
+       ═══════════════════════════════════════════════ */
+    :root {
+      --bg:             #0d1117;
+      --bg-surface:     #161b22;
+      --bg-card:        #1c2128;
+      --bg-card-hover:  #22272e;
+      --bg-input:       #0d1117;
+      --border:         #30363d;
+      --border-subtle:  #21262d;
+
+      --text:           #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted:     #545d68;
+
+      --active:         #3fb950;
+      --active-glow:    rgba(63, 185, 80, 0.15);
+      --active-bg:      rgba(63, 185, 80, 0.08);
+
+      --pinned:         #58a6ff;
+      --pinned-glow:    rgba(88, 166, 255, 0.15);
+      --pinned-bg:      rgba(88, 166, 255, 0.08);
+
+      --archived:       #545d68;
+
+      --accent:         #d29922;
+      --accent-hover:   #e3a82a;
+      --accent-bg:      rgba(210, 153, 34, 0.1);
+
+      --danger:         #f85149;
+      --danger-bg:      rgba(248, 81, 73, 0.1);
+
+      --success-toast:  #238636;
+      --error-toast:    #da3633;
+
+      --radius:         8px;
+      --radius-sm:      5px;
+      --radius-lg:      12px;
+
+      --font-sans:      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono:      'SF Mono', 'Cascadia Code', 'JetBrains Mono', ui-monospace, 'Fira Code', Menlo, monospace;
+
+      --shadow-card:    0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px var(--border-subtle);
+      --shadow-hover:   0 4px 12px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
+      --shadow-header:  0 1px 0 var(--border-subtle);
+    }
+
+    /* ═══════════════════════════════════════════════
+       LIGHT THEME
+       ═══════════════════════════════════════════════ */
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg:             #f6f8fa;
+        --bg-surface:     #ffffff;
+        --bg-card:        #ffffff;
+        --bg-card-hover:  #f3f4f6;
+        --bg-input:       #f6f8fa;
+        --border:         #d0d7de;
+        --border-subtle:  #d8dee4;
+
+        --text:           #1f2328;
+        --text-secondary: #656d76;
+        --text-muted:     #8b949e;
+
+        --active:         #1a7f37;
+        --active-glow:    rgba(26, 127, 55, 0.12);
+        --active-bg:      rgba(26, 127, 55, 0.06);
+
+        --pinned:         #0969da;
+        --pinned-glow:    rgba(9, 105, 218, 0.12);
+        --pinned-bg:      rgba(9, 105, 218, 0.06);
+
+        --archived:       #8b949e;
+
+        --accent:         #9a6700;
+        --accent-hover:   #7d5600;
+        --accent-bg:      rgba(154, 103, 0, 0.08);
+
+        --danger:         #cf222e;
+        --danger-bg:      rgba(207, 34, 46, 0.06);
+
+        --success-toast:  #1a7f37;
+        --error-toast:    #cf222e;
+
+        --shadow-card:    0 1px 3px rgba(31,35,40,0.08), 0 0 0 1px var(--border-subtle);
+        --shadow-hover:   0 4px 12px rgba(31,35,40,0.12), 0 0 0 1px var(--border);
+        --shadow-header:  0 1px 0 var(--border-subtle);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESET
+       ═══════════════════════════════════════════════ */
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    /* ═══════════════════════════════════════════════
+       BASE
+       ═══════════════════════════════════════════════ */
+    html { height: 100%; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    #app {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 20px 0 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 24px;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .logo h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+    }
+    .header-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .badge-active {
+      background: var(--active-bg);
+      color: var(--active);
+      border: 1px solid rgba(63, 185, 80, 0.2);
+    }
+    .badge-pinned {
+      background: var(--pinned-bg);
+      color: var(--pinned);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      margin-left: 8px;
+    }
+    .connection-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--active);
+      flex-shrink: 0;
+    }
+    .connection-dot.connected {
+      animation: breathe 2.5s ease-in-out infinite;
+    }
+    .connection-dot.disconnected {
+      background: var(--danger);
+      animation: none;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SEARCH & CONTROLS ROW
+       ═══════════════════════════════════════════════ */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+    }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 40px 8px 34px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input::placeholder { color: var(--text-muted); }
+    .search-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-bg);
+    }
+    .search-shortcut {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .search-input:focus ~ .search-shortcut { opacity: 0; }
+
+    .toggle-archived {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle-archived:hover {
+      background: var(--bg-card-hover);
+      color: var(--text);
+    }
+    .toggle-archived.active {
+      background: var(--accent-bg);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .toggle-checkbox {
+      width: 14px; height: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .toggle-archived.active .toggle-checkbox {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle-check {
+      width: 8px; height: 8px;
+      color: var(--bg);
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .toggle-archived.active .toggle-check { opacity: 1; }
+
+    /* ═══════════════════════════════════════════════
+       PROJECT GROUPS
+       ═══════════════════════════════════════════════ */
+    .project-group {
+      margin-bottom: 20px;
+      animation: fadeSlideIn 0.3s ease both;
+    }
+    .project-header {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 0 4px;
+      margin-bottom: 8px;
+    }
+    .project-name {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+    .project-path {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .project-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       SESSION CARDS
+       ═══════════════════════════════════════════════ */
+    .session-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      margin-bottom: 6px;
+      box-shadow: var(--shadow-card);
+      transition: box-shadow 0.2s, background 0.2s, transform 0.15s;
+      cursor: default;
+    }
+    .session-card:hover {
+      box-shadow: var(--shadow-hover);
+      background: var(--bg-card-hover);
+    }
+    .session-card.status-active {
+      border-left: 3px solid var(--active);
+    }
+    .session-card.status-pinned {
+      border-left: 3px solid var(--pinned);
+    }
+    .session-card.status-archived {
+      border-left: 3px solid var(--border);
+      opacity: 0.7;
+    }
+    .session-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .status-dot-wrap {
+      padding-top: 4px;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.active {
+      background: var(--active);
+      box-shadow: 0 0 6px var(--active-glow), 0 0 12px var(--active-glow);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .status-dot.pinned {
+      background: var(--pinned);
+      box-shadow: 0 0 4px var(--pinned-glow);
+    }
+    .status-dot.archived {
+      background: var(--archived);
+    }
+    .session-summary {
+      flex: 1;
+      min-width: 0;
+    }
+    .summary-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .summary-text.empty {
+      color: var(--text-muted);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .prompt-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 2px 7px;
+      border-radius: 20px;
+      border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .session-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .meta-sep {
+      color: var(--border);
+    }
+    .session-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       BUTTONS
+       ═══════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+    .btn-icon {
+      width: 14px; height: 14px;
+      flex-shrink: 0;
+    }
+    .btn-resume {
+      color: var(--active);
+      border-color: rgba(63, 185, 80, 0.3);
+    }
+    .btn-resume:hover {
+      background: var(--active-bg);
+      color: var(--active);
+      border-color: var(--active);
+    }
+    .btn-pin {
+      color: var(--pinned);
+      border-color: rgba(88, 166, 255, 0.3);
+    }
+    .btn-pin:hover {
+      background: var(--pinned-bg);
+      color: var(--pinned);
+      border-color: var(--pinned);
+    }
+    .btn-pin.is-pinned {
+      background: var(--pinned-bg);
+      border-color: var(--pinned);
+    }
+    .btn-remove {
+      color: var(--text-muted);
+      border-color: transparent;
+      padding: 5px 7px;
+    }
+    .btn-remove:hover {
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-color: rgba(248, 81, 73, 0.3);
+    }
+
+    /* ═══════════════════════════════════════════════
+       EMPTY STATE
+       ═══════════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      animation: fadeIn 0.4s ease;
+    }
+    .empty-icon {
+      width: 56px; height: 56px;
+      color: var(--text-muted);
+      margin: 0 auto 16px;
+      opacity: 0.5;
+    }
+    .empty-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .empty-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 320px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .empty-desc code {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ═══════════════════════════════════════════════
+       TOAST
+       ═══════════════════════════════════════════════ */
+    #toasts {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 8px;
+    }
+    .toast {
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      color: #fff;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      max-width: 320px;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .toast-success { background: var(--success-toast); }
+    .toast-error { background: var(--error-toast); }
+
+    /* ═══════════════════════════════════════════════
+       ANIMATIONS
+       ═══════════════════════════════════════════════ */
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 4px var(--active-glow), 0 0 8px var(--active-glow); }
+      50% { box-shadow: 0 0 8px var(--active-glow), 0 0 20px var(--active-glow); }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      #app { padding: 0 12px; }
+      header { padding: 14px 0 12px; }
+      .header-top { flex-wrap: wrap; }
+      .header-badges { margin-left: 0; }
+      .controls-row { flex-wrap: wrap; }
+      .search-wrap { min-width: 200px; }
+      .session-top { flex-wrap: wrap; }
+      .session-meta { gap: 8px; }
+      .session-actions { flex-wrap: wrap; }
+    }
+
+    /* Footer spacer */
+    main { padding-bottom: 40px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-top">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <polyline points="8 10 11 13 8 16"/>
+            <line x1="13" y1="16" x2="17" y2="16"/>
+          </svg>
+          <h1>Claude Code Sessions</h1>
+        </div>
+        <div class="header-badges">
+          <span class="badge badge-active" id="badge-active" style="display:none">0 active</span>
+          <span class="badge badge-pinned" id="badge-pinned" style="display:none">0 pinned</span>
+          <div class="connection-status">
+            <div class="connection-dot disconnected" id="conn-dot"></div>
+            <span id="conn-text">connecting</span>
+          </div>
+        </div>
+      </div>
+      <div class="controls-row">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="6.5" cy="6.5" r="5"/>
+            <line x1="10" y1="10" x2="14" y2="14"/>
+          </svg>
+          <input type="text" class="search-input" id="search" placeholder="Search sessions..." autocomplete="off" spellcheck="false">
+          <span class="search-shortcut">/</span>
+        </div>
+        <button class="toggle-archived" id="toggle-archived" type="button">
+          <div class="toggle-checkbox">
+            <svg class="toggle-check" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="2 5.5 4.2 7.5 8 3"/>
+            </svg>
+          </div>
+          Archived
+        </button>
+      </div>
+    </header>
+
+    <main id="content"></main>
+    <div id="toasts"></div>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════
+       STATE
+       ═══════════════════════════════════════════════ */
+    let sessions = [];
+    let showArchived = false;
+    let searchQuery = '';
+    let sseConnected = false;
+    let eventSource = null;
+    let reconnectDelay = 1000;
+    let timestampInterval = null;
+
+    /* ═══════════════════════════════════════════════
+       DOM REFS
+       ═══════════════════════════════════════════════ */
+    const $content = document.getElementById('content');
+    const $search = document.getElementById('search');
+    const $toggleArchived = document.getElementById('toggle-archived');
+    const $badgeActive = document.getElementById('badge-active');
+    const $badgePinned = document.getElementById('badge-pinned');
+    const $connDot = document.getElementById('conn-dot');
+    const $connText = document.getElementById('conn-text');
+
+    /* ═══════════════════════════════════════════════
+       ICONS (inline SVG strings)
+       ═══════════════════════════════════════════════ */
+    const ICON = {
+      terminal: `<svg class="btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 5 7.5 8.5 4 12"/><line x1="9" y1="12" x2="13" y2="12"/></svg>`,
+      pin: `<svg class="btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5L10 2.5L10.5 6.5L13 8.5L13 10L8.5 10L8 14.5L7.5 14.5L7 10L3 10L3 8.5L5.5 6.5Z"/></svg>`,
+      pinFilled: `<svg class="btn-icon" viewBox="0 0 16 16" fill="currentColor" stroke="currentColor" stroke-width="0.5"><path d="M6 2.5L10 2.5L10.5 6.5L13 8.5L13 10L8.5 10L8 14.5L7.5 14.5L7 10L3 10L3 8.5L5.5 6.5Z"/></svg>`,
+      remove: `<svg class="btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>`,
+    };
+
+    /* ═══════════════════════════════════════════════
+       INIT
+       ═══════════════════════════════════════════════ */
+    async function init() {
+      await fetchSessions();
+      connectSSE();
+      timestampInterval = setInterval(updateTimestamps, 30000);
+      setupEvents();
+    }
+
+    /* ═══════════════════════════════════════════════
+       FETCH
+       ═══════════════════════════════════════════════ */
+    async function fetchSessions() {
+      try {
+        const params = new URLSearchParams();
+        if (showArchived) params.set('all', 'true');
+        const res = await fetch('/api/sessions?' + params);
+        sessions = await res.json();
+        render();
+      } catch {
+        // Server might not be ready
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       SSE
+       ═══════════════════════════════════════════════ */
+    function connectSSE() {
+      if (eventSource) { eventSource.close(); }
+      eventSource = new EventSource('/api/events');
+
+      eventSource.onopen = () => {
+        sseConnected = true;
+        reconnectDelay = 1000;
+        updateConnectionUI();
+      };
+
+      eventSource.onmessage = (e) => {
+        if (e.data === 'connected') return;
+        try {
+          const data = JSON.parse(e.data);
+          if (showArchived) {
+            // SSE only has non-archived — re-fetch for complete data
+            fetchSessions();
+          } else {
+            sessions = data;
+            render();
+          }
+        } catch {}
+      };
+
+      eventSource.onerror = () => {
+        sseConnected = false;
+        updateConnectionUI();
+        eventSource.close();
+        setTimeout(() => {
+          reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+          connectSSE();
+        }, reconnectDelay);
+      };
+    }
+
+    function updateConnectionUI() {
+      $connDot.className = 'connection-dot ' + (sseConnected ? 'connected' : 'disconnected');
+      $connText.textContent = sseConnected ? 'live' : 'reconnecting';
+    }
+
+    /* ═══════════════════════════════════════════════
+       RELATIVE TIME
+       ═══════════════════════════════════════════════ */
+    function relativeTime(iso) {
+      if (!iso) return '';
+      const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+      if (diff < 5) return 'just now';
+      if (diff < 60) return Math.floor(diff) + 's ago';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      const days = Math.floor(diff / 86400);
+      return days === 1 ? '1 day ago' : days + ' days ago';
+    }
+
+    function updateTimestamps() {
+      document.querySelectorAll('[data-ts]').forEach(el => {
+        el.textContent = relativeTime(el.dataset.ts);
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       GROUP & RENDER
+       ═══════════════════════════════════════════════ */
+    function groupByProject(list) {
+      const groups = {};
+      for (const s of list) {
+        const key = s.cwd;
+        if (!groups[key]) {
+          groups[key] = {
+            project_name: s.project_name,
+            cwd: s.cwd,
+            sessions: [],
+            hasActive: false,
+            latestActivity: s.last_activity_at,
+          };
+        }
+        groups[key].sessions.push(s);
+        if (s.status === 'active') groups[key].hasActive = true;
+        if (s.last_activity_at > groups[key].latestActivity) {
+          groups[key].latestActivity = s.last_activity_at;
+        }
+      }
+      return Object.values(groups).sort((a, b) => {
+        if (a.hasActive !== b.hasActive) return a.hasActive ? -1 : 1;
+        return new Date(b.latestActivity) - new Date(a.latestActivity);
+      });
+    }
+
+    function render() {
+      let filtered = sessions;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = sessions.filter(s =>
+          s.summary.toLowerCase().includes(q) ||
+          s.project_name.toLowerCase().includes(q) ||
+          s.cwd.toLowerCase().includes(q)
+        );
+      }
+
+      // Update badges
+      const activeCount = sessions.filter(s => s.status === 'active').length;
+      const pinnedCount = sessions.filter(s => s.status === 'pinned').length;
+
+      if (activeCount > 0) {
+        $badgeActive.style.display = '';
+        $badgeActive.textContent = activeCount + ' active';
+      } else {
+        $badgeActive.style.display = 'none';
+      }
+      if (pinnedCount > 0) {
+        $badgePinned.style.display = '';
+        $badgePinned.textContent = pinnedCount + ' pinned';
+      } else {
+        $badgePinned.style.display = 'none';
+      }
+
+      if (filtered.length === 0) {
+        $content.innerHTML = renderEmpty();
+        return;
+      }
+
+      const groups = groupByProject(filtered);
+      $content.innerHTML = groups.map((g, gi) => renderGroup(g, gi)).join('');
+    }
+
+    function renderEmpty() {
+      if (searchQuery) {
+        return `<div class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="7"/><line x1="16" y1="16" x2="21" y2="21"/>
+          </svg>
+          <div class="empty-title">No matching sessions</div>
+          <div class="empty-desc">Try a different search term or toggle "Archived" to include past sessions.</div>
+        </div>`;
+      }
+      return `<div class="empty-state">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <polyline points="8 10 11 13 8 16"/>
+          <line x1="13" y1="16" x2="17" y2="16"/>
+        </svg>
+        <div class="empty-title">No sessions yet</div>
+        <div class="empty-desc">Start a Claude Code session in your terminal and it will appear here automatically.<br><br>Run <code>claude</code> in any project directory.</div>
+      </div>`;
+    }
+
+    function renderGroup(group, index) {
+      const count = group.sessions.length;
+      const shortPath = group.cwd.replace(/^\/Users\/[^/]+/, '~');
+      return `
+        <div class="project-group" style="animation-delay: ${index * 50}ms">
+          <div class="project-header">
+            <span class="project-name">${esc(group.project_name)}</span>
+            <span class="project-path">${esc(shortPath)}</span>
+            <span class="project-count">${count} session${count !== 1 ? 's' : ''}</span>
+          </div>
+          ${group.sessions.map(s => renderSession(s)).join('')}
+        </div>`;
+    }
+
+    function renderSession(s) {
+      const summaryHtml = s.summary
+        ? `<div class="summary-text">${esc(s.summary)}</div>`
+        : `<div class="summary-text empty">No summary</div>`;
+
+      const canResume = s.status === 'pinned' || s.status === 'archived';
+      const canRemove = s.status === 'pinned' || s.status === 'archived';
+
+      const resumeBtn = canResume
+        ? `<button class="btn btn-resume" onclick="resumeSession('${esc(s.session_id)}')">${ICON.terminal} Resume</button>`
+        : '';
+      const pinBtn = `<button class="btn btn-pin${s.pinned ? ' is-pinned' : ''}" onclick="togglePin('${esc(s.session_id)}')">${s.pinned ? ICON.pinFilled : ICON.pin} ${s.pinned ? 'Unpin' : 'Pin'}</button>`;
+      const removeBtn = canRemove
+        ? `<button class="btn btn-remove" onclick="removeSession('${esc(s.session_id)}')" title="Remove">${ICON.remove}</button>`
+        : '';
+
+      return `
+        <div class="session-card status-${s.status}">
+          <div class="session-top">
+            <div class="status-dot-wrap"><div class="status-dot ${s.status}"></div></div>
+            <div class="session-summary">${summaryHtml}</div>
+            ${s.prompt_count > 0 ? `<span class="prompt-badge">${s.prompt_count} prompt${s.prompt_count !== 1 ? 's' : ''}</span>` : ''}
+          </div>
+          <div class="session-meta">
+            <span>Started <span data-ts="${s.started_at}">${relativeTime(s.started_at)}</span></span>
+            <span class="meta-sep">&middot;</span>
+            <span>Active <span data-ts="${s.last_activity_at}">${relativeTime(s.last_activity_at)}</span></span>
+            ${s.ended_at ? `<span class="meta-sep">&middot;</span><span>Ended <span data-ts="${s.ended_at}">${relativeTime(s.ended_at)}</span></span>` : ''}
+          </div>
+          <div class="session-actions">
+            ${resumeBtn}${pinBtn}${removeBtn}
+          </div>
+        </div>`;
+    }
+
+    /* ═══════════════════════════════════════════════
+       ACTIONS
+       ═══════════════════════════════════════════════ */
+    async function resumeSession(id) {
+      try {
+        const res = await fetch('/api/resume/' + id, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        showToast('Opening terminal...');
+      } catch {
+        showToast('Failed to open terminal', 'error');
+      }
+    }
+
+    async function togglePin(id) {
+      try {
+        const res = await fetch('/api/pin/' + id, { method: 'POST' });
+        if (!res.ok) throw new Error();
+        // Optimistic update
+        const s = sessions.find(x => x.session_id === id);
+        if (s) {
+          s.pinned = !s.pinned;
+          if (s.pinned && s.status === 'archived') s.status = 'pinned';
+          else if (!s.pinned && s.status === 'pinned') s.status = 'archived';
+          render();
+        }
+        showToast(s && s.pinned ? 'Session pinned' : 'Session unpinned');
+        if (!sseConnected) fetchSessions();
+      } catch {
+        showToast('Failed to toggle pin', 'error');
+      }
+    }
+
+    async function removeSession(id) {
+      if (!confirm('Remove this session from the dashboard?')) return;
+      try {
+        const res = await fetch('/api/sessions/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error();
+        sessions = sessions.filter(s => s.session_id !== id);
+        render();
+        showToast('Session removed');
+        if (!sseConnected) fetchSessions();
+      } catch {
+        showToast('Failed to remove session', 'error');
+      }
+    }
+
+    /* ═══════════════════════════════════════════════
+       TOAST
+       ═══════════════════════════════════════════════ */
+    function showToast(msg, type) {
+      type = type || 'success';
+      const el = document.createElement('div');
+      el.className = 'toast toast-' + type;
+      el.textContent = msg;
+      document.getElementById('toasts').appendChild(el);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => el.classList.add('show'));
+      });
+      setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 300);
+      }, 3000);
+    }
+
+    /* ═══════════════════════════════════════════════
+       EVENTS
+       ═══════════════════════════════════════════════ */
+    function setupEvents() {
+      // Search
+      $search.addEventListener('input', () => {
+        searchQuery = $search.value;
+        render();
+      });
+
+      // Toggle archived
+      $toggleArchived.addEventListener('click', () => {
+        showArchived = !showArchived;
+        $toggleArchived.classList.toggle('active', showArchived);
+        fetchSessions();
+      });
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if (e.key === '/' && document.activeElement !== $search && document.activeElement.tagName !== 'INPUT') {
+          e.preventDefault();
+          $search.focus();
+        }
+        if (e.key === 'Escape' && document.activeElement === $search) {
+          $search.blur();
+          if ($search.value) {
+            $search.value = '';
+            searchQuery = '';
+            render();
+          }
+        }
+      });
+    }
+
+    /* ═══════════════════════════════════════════════
+       UTILITY
+       ═══════════════════════════════════════════════ */
+    function esc(str) {
+      if (!str) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    /* ═══════════════════════════════════════════════
+       BOOT
+       ═══════════════════════════════════════════════ */
+    init();
+  </script>
+</body>
+</html>
