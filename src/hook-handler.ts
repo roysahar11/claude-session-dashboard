@@ -58,6 +58,11 @@ function now(): string {
   return new Date().toISOString();
 }
 
+function debugLog(msg: string): void {
+  const logPath = path.join(__dirname, "..", "data", "hooks.log");
+  fs.appendFileSync(logPath, `[${now()}] ${msg}\n`);
+}
+
 async function main(): Promise<void> {
   const raw = await readStdin();
   if (!raw.trim()) return;
@@ -68,6 +73,8 @@ async function main(): Promise<void> {
   } catch {
     return;
   }
+
+  debugLog(`${input.hook_event_name} sid=${input.session_id} source=${input.source || "-"} cwd=${input.cwd || "-"}`);
 
   const { hook_event_name, session_id } = input;
   if (!session_id) return;
@@ -92,6 +99,23 @@ async function main(): Promise<void> {
           ) {
             s.status = s.pinned ? "pinned" : "archived";
             s.ended_at = now();
+          }
+        }
+
+        // When resuming, Claude Code fires a transient "startup" SessionStart
+        // immediately before the "resume" SessionStart. Clean up that ghost.
+        if (hookSource === "resume") {
+          const recentThreshold = Date.now() - 10 * 1000;
+          for (const s of Object.values(data.sessions)) {
+            if (
+              s.session_id !== session_id &&
+              s.status === "active" &&
+              s.source === "startup" &&
+              s.prompt_count === 0 &&
+              new Date(s.started_at).getTime() > recentThreshold
+            ) {
+              delete data.sessions[s.session_id];
+            }
           }
         }
 
